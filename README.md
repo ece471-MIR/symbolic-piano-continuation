@@ -23,7 +23,7 @@ Then quantize to 16th notes: `uv run quantize_all.py`
 
     - `--workers N` - number of parallel workers (default: 8)
     - `--limit N` - only process N files per split (useful for testing, highly recommend)
-    - `--split train|val|both` - Process specific split (default: both)
+    - `--split train|val|both` - process specific split (default: both)
     - example: 
       ```bash
       uv run quantize_all.py --limit 5 --workers 16
