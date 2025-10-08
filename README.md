@@ -24,7 +24,10 @@ Then quantize to 16th notes: `uv run quantize_all.py`
     - `--workers N` - number of parallel workers (default: 8)
     - `--limit N` - only process N files per split (useful for testing, highly recommend)
     - `--split train|val|both` - Process specific split (default: both)
-    - example: uv run quantize_all.py --limit 5 workers 16
+    - example: 
+      ```bash
+      uv run quantize_all.py --limit 5 --workers 16
+      ```
 
 Then tokenize with REMI: `uv run tokenize_all.py`
 
@@ -37,7 +40,10 @@ Then tokenize with REMI: `uv run tokenize_all.py`
     - `--workers N` - number of parallel workers (default: 8)
     - `--limit N` - only process N files per split (for testing)
     - `--split train|val|both` - process specific split (default: both)
-    - example: uv run tokenize_all.py --limit 5
+    - example: 
+      ```bash
+      uv run tokenize_all.py --limit 5
+      ```
 
 # references
 
