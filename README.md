@@ -18,26 +18,26 @@ Once you have the data, filter into a train/test split: `uv run prep.py`
 
 Then quantize to 16th notes: `uv run quantize_all.py`
 
-    - This will create quantized tracks in `data/quantized/train/` and `data/quantized/val/`
-    - You have options!
+- This will create quantized tracks in `data/quantized/train/` and `data/quantized/val/`
+- You have options!
 
-        - `--workers N` - number of parallel workers (default: 8)
-        - `--limit N` - only process N files per split (useful for testing, highly recommend)
-        - `--split train|val|both` - Process specific split (default: both)
-        - example: uv run quantize_all.py --limit 5 workers 16
+    - `--workers N` - number of parallel workers (default: 8)
+    - `--limit N` - only process N files per split (useful for testing, highly recommend)
+    - `--split train|val|both` - Process specific split (default: both)
+    - example: uv run quantize_all.py --limit 5 workers 16
 
 Then tokenize with REMI: `uv run tokenize_all.py`
 
-    - This will create training samples by extracting the 16-bar chunks with at least 100 tokens
+- This will create training samples by extracting the 16-bar chunks with at least 100 tokens
 
-    - Output goes to `data/tokenized/train/` and `data/tokenized/val/`
+- Output goes to `data/tokenized/train/` and `data/tokenized/val/`
 
-    - More options!
+- More options!
     
-        - `--workers N` - number of parallel workers (default: 8)
-        - `--limit N` - only process N files per split (for testing)
-        - `--split train|val|both` - process specific split (default: both)
-        - example: uv run tokenize_all.py --limit 5
+    - `--workers N` - number of parallel workers (default: 8)
+    - `--limit N` - only process N files per split (for testing)
+    - `--split train|val|both` - process specific split (default: both)
+    - example: uv run tokenize_all.py --limit 5
 
 # references
 
