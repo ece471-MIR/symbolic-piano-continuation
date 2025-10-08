@@ -19,7 +19,7 @@ Once you have the data, filter into a train/test split: `uv run prep.py`
 Then quantize to 16th notes: `uv run quantize_all.py`
 - This will create quantized tracks in `data/quantized/train/` and `data/quantized/val/`
 - You have options!
-  - `--workers N` - number of parallel workers (default: 8, recommended: 24 for Ryzen 7900X3D)
+  - `--workers N` - number of parallel workers (default: 8)
   - `--limit N` - only process N files per split (useful for testing, highly recommend)
   - `--split train|val|both` - Process specific split (default: both)
   - example: `uv run quantize_all.py --limit 5 --workers 16`
