@@ -16,7 +16,16 @@ Make sure you downloaded it first: run `./get_data.sh`
 
 Once you have the data, filter into a train/test split: `uv run prep.py`
 
+Then quantize to 16th notes: `uv run quantize_all.py`
+    - This will create quantized tracks in `data/quantized/train/` and `data/quantized/val/`
+    - You have options!
+        - `--workers N` - number of parallel workers (default: 8, recommended: 24 for Ryzen 7900X3D)
+        - `--limit N` - only process N files per split (useful for testing, highly recommend)
+        - `--split train|val|both` - Process specific split (default: both)
+        - example: uv run quantize_all.py --limit 5 workers 16
+
 # references
 
 [^1]: [Aria-MIDI Dataset](https://huggingface.co/datasets/loubb/aria-midi/resolve/main/aria-midi-v1-pruned-ext.tar.gz?download=true)
 [^2]: [A TRADITIONAL APPROACH TO SYMBOLIC PIANO CONTINUATION, Zhou-Zheng et al.](https://futuremirex.com/portal/wp-content/uploads/2025/symbolic-music-generation/RWKV.pdf)
+[^3]: [Symusic Document](https://yikai-liao.github.io/symusic/tutorials/midi_operations.html)

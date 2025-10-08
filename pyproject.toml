@@ -7,5 +7,6 @@ requires-python = ">=3.13"
 dependencies = [
     "argparse>=1.4.0",
     "pathlib>=1.0.1",
+    "symusic>=0.5.8",
     "tqdm>=4.67.1",
 ]
