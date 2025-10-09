@@ -29,21 +29,9 @@ Then quantize to 16th notes: `uv run quantize_all.py`
       uv run quantize_all.py --limit 5 --workers 16
       ```
 
-Then tokenize with REMI: `uv run tokenize_all.py`
+Then tokenize with REMI: `uv run dataset.py`
 
 - This will create training samples by extracting the 16-bar chunks with at least 100 tokens
-
-- Output goes to `data/tokenized/train/` and `data/tokenized/val/`
-
-- More options!
-    
-    - `--workers N` - number of parallel workers (default: 8)
-    - `--limit N` - only process N files per split (for testing)
-    - `--split train|val|both` - process specific split (default: both)
-    - example: 
-      ```bash
-      uv run tokenize_all.py --limit 5
-      ```
 
 # references
 
