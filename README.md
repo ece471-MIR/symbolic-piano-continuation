@@ -16,7 +16,7 @@ Make sure you downloaded it first: run `./get_data.sh`
 
 Once you have the data, filter into a train/test split: `uv run prep.py`
 
-Then quantize to 16th notes: `uv run quantize_all.py`
+Then quantize to 16th notes: `uv run quantize_all.py`[^3]
 
 - This will create quantized tracks in `data/quantized/train/` and `data/quantized/val/`
 - You have options!
@@ -29,7 +29,7 @@ Then quantize to 16th notes: `uv run quantize_all.py`
       uv run quantize_all.py --limit 5 --workers 16
       ```
 
-Then tokenize with REMI: `uv run dataset.py` 
+Then tokenize with REMI: `uv run dataset.py`[^4]
 This script:
   1. Loads all .pkl quantized tracks from `data/quantized/train` and `data/quantized/val`
   2. Encodes them using miditok
