@@ -31,8 +31,6 @@ Then quantize to 16th notes: `uv run quantize_all.py`
 
 Then tokenize with REMI: `uv run dataset.py`
 
-- This will create training samples by extracting the 16-bar chunks with at least 100 tokens
-
 # references
 
 [^1]: [Aria-MIDI Dataset](https://huggingface.co/datasets/loubb/aria-midi/resolve/main/aria-midi-v1-pruned-ext.tar.gz?download=true)
