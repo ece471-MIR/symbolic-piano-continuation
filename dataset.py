@@ -135,35 +135,36 @@ if __name__ == "__main__":
     
     print(f"Tokenizer vocabulary size: {len(tokenizer.vocab)}")
     
-    # create dataset
-    quantized_dir = Path("data/quantized/train")
+    # process both train and val splits
+    for split in ["train", "val"]:
+        print(f"\n=== Processing {split.upper()} split ===")
+        quantized_dir = Path(f"data/quantized/{split}")
     
-    if not quantized_dir.exists():
-        print(f"Error: {quantized_dir} does not exist!")
-        print("Run quantize_all.py first to create quantized .pkl files")
-        exit(1)
+        if not quantized_dir.exists():
+            print(f"Error: {quantized_dir} does not exist!")
+            print("Run quantize_all.py first to create quantized .pkl files")
+            continue
     
-    dataset = MIREXCustomDataset(
-        quantized_dir=quantized_dir,
-        tokenizer=tokenizer,
-        max_seq_len=1024
+        dataset = MIREXCustomDataset(
+            quantized_dir=quantized_dir,
+            tokenizer=tokenizer,
+            max_seq_len=1024
         )
     
-    print(f"Dataset size: {len(dataset)}")
+        print(f"{split.upper()} dataset size: {len(dataset)}")
     
-    print("\nTesting sample loading:")
-    for i in range(min(3, len(dataset))):
-        sample = dataset[i]
-        print(f"Sample {i}:")
-        print(f"  input_ids shape: {sample['input_ids'].shape}")
-        print(f"  labels shape: {sample['labels'].shape}")
-        print(f"  attention_mask shape: {sample['attention_mask'].shape}")
+        # quick test sample
+        print("\nTesting sample loading:")
+        for i in range(min(2, len(dataset))):
+            sample = dataset[i]
+            print(f"Sample {i}: input_ids={sample['input_ids'].shape}, labels={sample['labels'].shape}")
     
-    print("\nTesting DataLoader:")
-    dataloader = DataLoader(dataset, batch_size=4, shuffle=True, collate_fn=collate_fn)
-    batch = next(iter(dataloader))
-    print(f"Batch input_ids shape: {batch['input_ids'].shape}")
-    print(f"Batch labels shape: {batch['labels'].shape}")
-    print(f"Batch attention_mask shape: {batch['attention_mask'].shape}")
-    
-    print("\nDataset working correctly!")
+        # quick DataLoader test
+        print("\nTesting DataLoader:")
+        dataloader = DataLoader(dataset, batch_size=4, shuffle=True, collate_fn=collate_fn)
+        batch = next(iter(dataloader))
+        print(f"Batch input_ids shape: {batch['input_ids'].shape}")
+        print(f"Batch labels shape: {batch['labels'].shape}")
+        print(f"Batch attention_mask shape: {batch['attention_mask'].shape}")
+
+    print("\nBoth train and val datasets loaded successfully!")
