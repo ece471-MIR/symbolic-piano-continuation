@@ -13,7 +13,7 @@ class MIREXCustomDataset(torch.utils.data.Dataset):
         tokenizer, 
         max_pitch_offset: int = 0,
         max_seq_len: int = 1024
-    ):
+        ):
 
         super().__init__()
         self._pkl_files = list(quantized_dir.glob("**/*.pkl"))
@@ -99,19 +99,19 @@ if __name__ == "__main__":
                 item['input_ids'], 
                 (0, pad_len), 
                 value=0
-            )
+                )
         
             attention_mask = torch.nn.functional.pad(
                 item['attention_mask'], 
                 (0, pad_len), 
                 value=0
-            )
+                )
         
             labels = torch.nn.functional.pad(
                 item['labels'], 
                 (0, pad_len), 
                 value=-100
-            )
+                )   
         
             input_ids_list.append(input_ids)
             attention_mask_list.append(attention_mask)
@@ -121,7 +121,7 @@ if __name__ == "__main__":
             'input_ids': torch.stack(input_ids_list),
             'attention_mask': torch.stack(attention_mask_list),
             'labels': torch.stack(labels_list),
-        }
+            }
 
     # create tokenizer with simplified REMI config
     config = miditok.TokenizerConfig(
@@ -130,7 +130,7 @@ if __name__ == "__main__":
         encode_ids_splits="no",
         use_pitchdrum_tokens=False,
         special_tokens=["PAD", "BOS", "EOS"],
-    )
+        )
     tokenizer = miditok.REMI(config)
     
     print(f"Tokenizer vocabulary size: {len(tokenizer.vocab)}")
@@ -147,7 +147,7 @@ if __name__ == "__main__":
         quantized_dir=quantized_dir,
         tokenizer=tokenizer,
         max_seq_len=1024
-    )
+        )
     
     print(f"Dataset size: {len(dataset)}")
     
