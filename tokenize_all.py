@@ -1,155 +1,169 @@
-from __future__ import annotations
+#!/usr/bin/env python3
+
 from pathlib import Path
-from symusic import Score
-from miditok import REMI, TokenizerConfig
-from tqdm import tqdm
+import numpy as np
+import torch
+import symusic
 import pickle
-import argparse
-import json
-import random
-import concurrent.futures as fut
 
-def create_remi_tokenizer() -> REMI:
-    config = TokenizerConfig(
-        use_velocities=False,
-        encode_ids_splits="no",
-        beat_res={(0, 4): 4},
-        num_velocities=1,
-        use_chords=False,
-        use_rests=False,
-        use_tempos=True,
-        use_time_signatures=False,
-        use_programs=False,
-        num_tempos=40,
-        tempo_range=(40, 250),
-    )
-    tokenizer = REMI(config)
-    return tokenizer
+class MIREXCustomDataset(torch.utils.data.Dataset):
+    def __init__(
+        self, 
+        quantized_dir: Path, 
+        tokenizer, 
+        max_pitch_offset: int = 0,
+        max_seq_len: int = 1024
+    ):
 
-def find_bar_positions(tokens: list) -> list[int]:
-    if len(tokens) < 100:
-        return []
-    
-    estimated_bars = len(tokens) // 60
-    if estimated_bars < 16:
-        return []
-    
-    # creates estimated bar positions
-    bar_interval = len(tokens) // estimated_bars
-    return [i * bar_interval for i in range(estimated_bars + 1)]
-
-
-def extract_16bar_chunks(tokens: list[int], tokenizer: REMI, min_tokens: int = 100) -> list[list[int]]:
-    bar_positions = find_bar_positions(tokens)
-    
-    if len(bar_positions) < 17:  
-        return []
-    
-    # find all valid 16-bar windows
-    valid_windows = []
-    for start_bar in range(len(bar_positions) - 16):
-        start_pos = bar_positions[start_bar]
-        end_pos = bar_positions[start_bar + 16]
-        chunk = tokens[start_pos:end_pos]
+        super().__init__()
+        self._pkl_files = list(quantized_dir.glob("**/*.pkl"))
+        self._tokenizer = tokenizer
+        self._num_prompt_measures = 4
+        self._num_completion_measures = 12
+        self._max_pitch_offset = max_pitch_offset
+        self._max_seq_len = max_seq_len
         
-        if len(chunk) >= min_tokens:
-            valid_windows.append(chunk)
+        if not self._pkl_files:
+            raise ValueError(f"No .pkl files found in {quantized_dir}")
+        
+        print(f"Loaded {len(self._pkl_files)} quantized track files")
     
-    if not valid_windows:
-        return []
+    def __len__(self):
+        return len(self._pkl_files)
     
-    # randomly select up to 3 chunks from valid windows
-    num_chunks = min(3, len(valid_windows))
-    return random.sample(valid_windows, num_chunks)
-
-def process_one_file(pkl_path: Path, tokenizer: REMI, out_dir: Path, min_tokens: int):
-    try:
-        with pkl_path.open("rb") as f:
+    def __getitem__(self, idx: int):
+        pkl_path = self._pkl_files[idx]
+        
+        with open(pkl_path, "rb") as f:
             track = pickle.load(f)
+        
+        score = symusic.Score(ttype=symusic.TimeUnit.tick)
+        score.tracks.append(track)
+        
+        encoding = self._tokenizer.encode(score)[0]
+        token_ids = np.array(encoding.ids, dtype=np.int32)
+        
+        # find all bar boundaries
+        bar_starts = np.where(token_ids == self._tokenizer.vocab["Bar_None"])[0]
+        
+        # need at least 17 bars to select a 16-bar window
+        if len(bar_starts) < 17:
+            # if not enough bars, just use whatever we have
+            sample = token_ids
+        else:
+            # try up to 10 times to find a 16-bar window with > 100 tokens
+            for _ in range(10):
+                selected_bar_start = np.random.randint(0, len(bar_starts) - 16)
+                sample_start = bar_starts[selected_bar_start]
+                sample_end = bar_starts[selected_bar_start + 16]
+                sample = token_ids[sample_start:sample_end]
+                
+                if len(sample) > 100:
+                    break
+        
+        input_ids = torch.from_numpy(sample.copy()).long()
+        
+        attention_mask = torch.ones_like(input_ids, dtype=torch.long)
+        
+        labels = input_ids.clone()[1:]
+        input_ids = input_ids[:-1]
+        
+        tgt_len = min(len(labels), len(input_ids), self._max_seq_len)
+        labels = labels[:tgt_len]
+        input_ids = input_ids[:tgt_len]
+        attention_mask = attention_mask[:tgt_len]
+        
+        return {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "labels": labels,
+        }
 
-            # creates a temporary score object to tokenize
-            score = Score()
-            score.tracks.append(track)
-            score.ticks_per_quarter = 960
-
-            # tokenize
-            tokens = tokenizer.encode(score)
-
-        if not tokens or not tokens[0]:
-            return False, (pkl_path, "No tokens generated")
-
-        track_tokens = tokens[0] # gets the first track's tokens
-
-        token_ids = [t.value if hasattr(t, 'value') else t for t in track_tokens]
-
-        # extracts 16-bar chunks
-        chunks = extract_16bar_chunks(token_ids, min_tokens)
-
-        if not chunks:
-            return False, (pkl_path, f"No valid chunks (only {len(token_ids)} tokens)")
-
-        base_name = pkl_path.stem
-        for i, chunk in enumerate(chunks):
-            out_path = out_dir / f"{base_name}_chunk{i}.json"
-            with out_path.open("w") as f:
-                json.dump({"tokens": chunk, "length": len(chunk)}, f)
-        return True, (pkl_path, len(chunks))
-
-    except Exception as e:
-            return False, (pkl_path, str(e))
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--base", type=Path, default=Path("data"))
-    ap.add_argument("--split", choices=["train", "val", "both"], default="both")
-    ap.add_argument("--workers", type=int, default=8)
-    ap.add_argument("--min-tokens", type=int, default=100, help="minimum tokens required per chunk")
-    ap.add_argument("--limit", type=int, default=None, help="only process this many files per split (for testing)")
-    args = ap.parse_args()
-
-    print("Creating REMI tokenizer...")
-    tokenizer = create_remi_tokenizer()
-    print(f"Vocabulary size: {len(tokenizer.vocab)}")
-
-    splits = ["train", "val"] if args.split == "both" else [args.split]
-
-    for split in splits:
-        in_dir = args.base / "quantized" / split
-        out_dir = args.base / "tokenized" / split
-        out_dir.mkdir(parents=True, exist_ok=True)
-
-        pkl_files = sorted(in_dir.glob("*.pkl"))
-        if args.limit:
-            pkl_files = pkl_files[:args.limit]
-
-        if not pkl_files:
-            print(f"No pickle files in {in_dir}")
-            continue
-
-        print(f"\nTokenizing {len(pkl_files)} files from {split}...")
-        ok = 0
-        total_chunks = 0
-        fails = []
-
-        with fut.ThreadPoolExecutor(max_workers=args.workers) as ex:
-            futures = [ex.submit(process_one_file, p, tokenizer, out_dir, args.min_tokens) for p in pkl_files]
-
-            for future in tqdm(fut.as_completed(futures), total=len(pkl_files)):
-                success, info = future.result()
-                if success:
-                    ok += 1
-                    total_chunks += info[1]
-                else:
-                    fails.append(info)
-
-        print(f"[{split}] Done: {ok} files -> {total_chunks} chunks, {len(fails)} failed")
-
-        if fails:
-            log = out_dir / "_failed.txt"
-            with log.open("w") as f:
-                for path, msg in fails:
-                    f.write(f"{path}\t{msg}\n")
-            print(f"Failure log -> {log}")
 
 if __name__ == "__main__":
-    main()   
+    import miditok
+    from torch.utils.data import DataLoader
+    
+    def collate_fn(batch):
+        max_len = max(item['input_ids'].shape[0] for item in batch)
+    
+        input_ids_list = []
+        attention_mask_list = []
+        labels_list = []
+    
+        for item in batch:
+            seq_len = item['input_ids'].shape[0]
+            pad_len = max_len - seq_len
+        
+            input_ids = torch.nn.functional.pad(
+                item['input_ids'], 
+                (0, pad_len), 
+                value=0
+            )
+        
+            attention_mask = torch.nn.functional.pad(
+                item['attention_mask'], 
+                (0, pad_len), 
+                value=0
+            )
+        
+            labels = torch.nn.functional.pad(
+                item['labels'], 
+                (0, pad_len), 
+                value=-100
+            )
+        
+            input_ids_list.append(input_ids)
+            attention_mask_list.append(attention_mask)
+            labels_list.append(labels)
+    
+        return {
+            'input_ids': torch.stack(input_ids_list),
+            'attention_mask': torch.stack(attention_mask_list),
+            'labels': torch.stack(labels_list),
+        }
+
+    # create tokenizer with simplified REMI config
+    config = miditok.TokenizerConfig(
+        pitch_range=(0, 127),
+        use_velocities=False,
+        encode_ids_splits="no",
+        use_pitchdrum_tokens=False,
+        special_tokens=["PAD", "BOS", "EOS"],
+    )
+    tokenizer = miditok.REMI(config)
+    
+    print(f"Tokenizer vocabulary size: {len(tokenizer.vocab)}")
+    
+    # create dataset
+    quantized_dir = Path("data/quantized/train")
+    
+    if not quantized_dir.exists():
+        print(f"Error: {quantized_dir} does not exist!")
+        print("Run quantize_all.py first to create quantized .pkl files")
+        exit(1)
+    
+    dataset = MIREXCustomDataset(
+        quantized_dir=quantized_dir,
+        tokenizer=tokenizer,
+        max_seq_len=1024
+    )
+    
+    print(f"Dataset size: {len(dataset)}")
+    
+    print("\nTesting sample loading:")
+    for i in range(min(3, len(dataset))):
+        sample = dataset[i]
+        print(f"Sample {i}:")
+        print(f"  input_ids shape: {sample['input_ids'].shape}")
+        print(f"  labels shape: {sample['labels'].shape}")
+        print(f"  attention_mask shape: {sample['attention_mask'].shape}")
+    
+    print("\nTesting DataLoader:")
+    dataloader = DataLoader(dataset, batch_size=4, shuffle=True, collate_fn=collate_fn)
+    batch = next(iter(dataloader))
+    print(f"Batch input_ids shape: {batch['input_ids'].shape}")
+    print(f"Batch labels shape: {batch['labels'].shape}")
+    print(f"Batch attention_mask shape: {batch['attention_mask'].shape}")
+    
+    print("\nDataset working correctly!")
