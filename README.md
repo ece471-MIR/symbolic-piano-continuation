@@ -39,6 +39,32 @@ This script:
 
   @ant when you make your training script just be sure to include `from dataset import MIREXCustomDataset, collate_fn` 
 
+## Running the baseline
+
+Make sure you properly initialize the MuseCoco submodule. You may need to run
+`uv pip install` in the submodule.
+
+Ensure you have [Podman](https://podman.io/) or [Docker](https://docs.docker.com/engine/) installed.
+
+Take a midi file with no lyrics, and place it in a well-known spot. If
+necessary, use the musecoco tools and create a prompt json using the
+`prompt-midi-to-json.py`. Place these files in the repo root as `prompt.mid` and
+`prompt.json` respectively.
+
+Make a directory to store your output json files.
+
+Run `./run_baseline.sh prompt.json <output directory> <n_samples>`; a good
+number of samples is 4.
+
+BUG: the baseline generates each output json as a "prompt". For each json,
+change "prompt" to "generation" so the musecoco script works
+
+Make a directory to store your generated midi samples
+
+Run `uv run generated_json_to_midi.py prompt.json <json output directory> <midi output directory>` 
+
+You should have midi files now!
+
 # references
 
 [^1]: [Aria-MIDI Dataset](https://huggingface.co/datasets/loubb/aria-midi/resolve/main/aria-midi-v1-pruned-ext.tar.gz?download=true)
