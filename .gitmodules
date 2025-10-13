@@ -1,0 +1,3 @@
+[submodule "mirex2025-musecoco"]
+	path = mirex2025-musecoco
+	url = git@github.com:ZZWaang/mirex2025-musecoco.git
