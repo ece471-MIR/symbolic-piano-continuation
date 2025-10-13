@@ -1,6 +1,16 @@
 # symbolic-piano-continuation
 Re-implementation of RWKV from MIREX 2025 Symbolic Music Generation Competition. See the dataset[^1], and the reference paper[^2].
 
+Theres 2 branches:
+
+`main` has our 'main' setup, where instead of training our own model we wrote
+our own preprocessing scripts and inferenced off the provided model from the
+paper we based this project off of[^2].
+
+`kahan-fail` has the model we tried to train on Kahan (Cooper EE GPU cluster)
+but due to some compatibility issues we could not complete training. (We
+were limited to CUDA 12.1, which broke some dependencies)
+
 ## prerequisites
 
 Install
