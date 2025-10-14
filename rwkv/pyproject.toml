@@ -10,6 +10,14 @@ dependencies = [
     "torch==2.5.1",
 ]
 
+[[tool.uv.index]]
+name = "torch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "torch-cu121" }]
+
 [build-system]
 requires = ["hatchling>=1.21"]
 build-backend = "hatchling.build"
