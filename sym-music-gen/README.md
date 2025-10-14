@@ -37,7 +37,9 @@ This script:
   4. Prepares tokenized tensors
   5. Verifies everything through DataLoader test
 
+###
 
+See [../README.md](../README.md)
 
 # references
 
