@@ -1,0 +1,21 @@
+[project]
+name = "mirex2025"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.13.7"
+dependencies = [
+    "accelerate==1.9.0",
+    "bitsandbytes==0.46.1",
+    "lightning==2.5.2",
+    "miditok==3.0.6.post1",
+    "miditoolkit==1.0.1",
+    "rwkv",
+    "torch==2.5.1",
+    "tensorboard==2.20.0",
+    "transformers==4.54.1",
+]
+
+[tool.uv.sources]
+rwkv = { path = "../rwkv", editable = true }
+
