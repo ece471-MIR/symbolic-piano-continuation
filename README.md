@@ -6,6 +6,7 @@ Also see the source repository for the model architecture and training routine[^
 ## usage
 
 Note: The Dockerfile and docker_train.sh script were written to be compatible with Kahan (Cooper EE's GPU cluster).
+This repository is assumed to be stored  `/zooper2/$USERNAME/mir`. 
 
 ### prepping the dataset
 
